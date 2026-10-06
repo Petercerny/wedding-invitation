@@ -1,13 +1,13 @@
 /** All sample wedding content lives here. Replace images in public/images. */
 export const wedding = {
-  names: ['Emma', 'Daniel'], initials: 'E & D',
+  names: ['Míša', 'Petr'], initials: 'M & P',
   date: 'Saturday, 19 June 2027', shortDate: '19 . 06 . 2027',
   location: 'THE COTSWOLDS, ENGLAND',
   cover: { eyebrow: 'THE WEDDING OF', line: 'A new chapter, together.', action: 'Open our invitation' },
   story: { title: 'It was always you.', paragraphs: [
     'One chance meeting, two coffees, and a conversation neither of us wanted to end. What began on a rainy afternoon became our favourite adventure.',
     'Since then, we’ve filled our days with little discoveries, long walks, and a home full of laughter. Now, we’re beginning our next chapter — and we can’t imagine it without you.'
-  ], signature: 'With love, Emma & Daniel' },
+  ], signature: 'With love, Míša & Petr' },
   invitation: { intro: 'Together with our families, we invite you to celebrate our marriage.', title: 'You, us & a little forever.', time: '3:00 in the afternoon', venue: 'The Manor House', address: ['Castle Combe, Chippenham', 'Wiltshire, SN14 7HR, England'], directions: 'https://www.google.com/maps/search/?api=1&query=The+Manor+House+Castle+Combe+SN14+7HR', note: 'Please arrive from 2:30pm to settle in before the ceremony.' },
   day: { title: 'From this moment on.', intro: 'A day to remember, with our favourite people.' },
   guestTitle: 'Come as our guest.',

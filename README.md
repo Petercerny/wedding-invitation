@@ -1,6 +1,6 @@
-# Emma & Daniel — a wedding invitation in a book
+# Míša & Petr — a scrapbook wedding invitation
 
-A runnable React + TypeScript + Tailwind CSS MVP, built with Vite and react-pageflip. Includes a cover and five photo-and-information spreads, keyboard navigation, touch swiping, a persistent RSVP shortcut, accessible HTML content, and reduced-motion support.
+A React + TypeScript + Tailwind CSS invitation, built with Vite and react-pageflip. The pale green scrapbook fits the viewport, with two-photo collages, supplied botanical stickers, readable text pages, and a step-by-step demo RSVP. Includes keyboard navigation, touch swiping, hidden-page focus protection, and reduced-motion support.
 
 ## Run locally
 
@@ -26,6 +26,7 @@ npm run preview
 - **Names, date, story, venue, address, directions, schedule, guest details, deadline, and photo captions:** `src/config/wedding.ts`.
 - **Photographs:** replace the WebP files in `public/images/`, or change the `photos` paths in the configuration. Paths such as `/images/our-photo.jpg` correspond to `public/images/our-photo.jpg`. Update each photograph's `alt` description and `position` if needed. Included photographs are generated fictional placeholders.
 - **Colours and typography:** shared theme tokens and book styling in `src/styles.css`. Fonts are bundled locally.
+- **Stickers:** transparent source assets live in `public/stickers/`; placement is handled by `WeddingStickers` and the book styles.
 - **Browser title and description:** `index.html`.
 
 ## RSVP demo and real storage
@@ -47,17 +48,15 @@ src/
   styles.css              # Tailwind theme and physical-book details
 ```
 
-The book uses two facing pages on desktop and one on mobile. Content measurement increases the book height when needed; the document can scroll vertically. Text is never scaled down to fit. Native library click/drag turning is disabled so inputs and links are safe; deliberate horizontal touch swipes are handled separately, and RSVP swipes are disabled. Keyboard arrows are ignored while using a form field or other interactive control. Reduced motion calls the library's immediate `turnToPage` method.
+The book uses two facing pages where space permits and one on phones or short screens. The available viewport determines its dimensions. Text is measured after fonts load and split into continuation pages without removing details or scaling the book. Page descriptors drive chapter navigation and restore the reading position after resizing. RSVP uses short steps, splitting contact and guest fields further on short screens or with enlarged text; values and the active step survive resizing. Native library click/drag turning is disabled so inputs and links are safe; deliberate horizontal touch swipes are handled separately, and RSVP swipes are disabled. Keyboard arrows are ignored while using a form field or other interactive control. Reduced motion calls the library's immediate `turnToPage` method.
 
 ## Browser checks
 
 ```sh
 npm test            # RSVP validation and storage adapter checks
-npm run test:e2e    # Desktop/mobile browser checks
+npm run test:e2e    # Desktop, laptop, tablet, phone and landscape checks
 ```
 
-Tests use Playwright and the system Chromium at `/usr/bin/chromium` in this workspace. On a machine without system Chromium, run `npx playwright install chromium` and remove the `executablePath` override from `playwright.config.ts`.
+Tests use Playwright with installed Google Chrome on Windows or `/usr/bin/chromium` on Linux. Set `CHROMIUM_PATH` to use another Chromium executable. On a machine without a system browser, run `npx playwright install chromium` and remove the `executablePath` override from `playwright.config.ts`.
 
-## Verification in this workspace
-
-The RSVP service tests passed, and every bundled image was checked for validity. Dependency installation required network approval and was interrupted, so the production build and Playwright browser tests have not been run yet. The browser checks are provided above for reproducible verification once dependencies are installed.
+Browser checks verify viewport fit, preservation of prose through pagination, navigation, resize behavior, text enlargement, and RSVP validation, storage, and retry behavior. The storage key remains `emma-daniel:rsvp-demo:v1` for compatibility with existing demo responses.
