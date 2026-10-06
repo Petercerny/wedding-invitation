@@ -23,6 +23,7 @@ async function fits(page: Page) {
 }
 async function rsvp(page: Page) {
   await page.getByRole('button', { name: 'RSVP', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Go to RSVP' })).toBeEnabled();
   await expect(page.getByLabel('Full name *')).toBeVisible();
 }
 async function contact(page: Page) {
@@ -157,7 +158,18 @@ test('reduced-motion keyboard navigation and animated turns keep pages visible',
   await expect(page.locator('.page-indicator')).toContainText('The beginning');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.getByRole('button', { name: 'Open our invitation' }).click();
+  // Keep the backing beneath the closed half while the cover is in flight.
+  await expect(page.locator('.book-stage')).toHaveClass(/is-cover-turn/);
+  const backing = await page.locator('.book-stage').evaluate(stage => {
+    const underlay = stage.querySelector('.book-underlay')!.getBoundingClientRect();
+    return { width: underlay.width, expected: stage.clientWidth / (stage.classList.contains('is-mobile') ? 1 : 2) };
+  });
+  expect(backing.width).toBeLessThanOrEqual(backing.expected + 8);
+  await expect(page.locator('.spine')).toBeHidden();
+  await expect(page.locator('.stf__hardShadow')).toBeHidden();
+  await expect(page.locator('.stf__hardInnerShadow')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.book-stage')).not.toHaveClass(/is-cover-turn/);
   await expect(page.locator('.page-indicator')).toContainText('Our story');
   await fits(page);
   await page.getByRole('button', { name: 'Next page' }).click();
@@ -245,5 +257,72 @@ test('touch swipes turn photo pages and ignore form inputs', async ({ page }, in
   await rsvp(page);
   await swipe('#fullName');
   await expect(page.getByLabel('Full name *')).toBeVisible();
+  await fits(page);
+});
+
+test('mouse corners follow the drag, cancel gently, and protect RSVP inputs', async ({ page }, info) => {
+  test.skip(['mobile', 'landscape'].includes(info.project.name), 'Mouse surfaces only.');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByRole('button', { name: 'Open our invitation' }).click();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  const face = page.locator('.flipbook .book-page[aria-hidden="false"].--right');
+  const bounds = (await face.boundingBox())!;
+  const x = bounds.x + bounds.width - 18, y = bounds.y + bounds.height - 18;
+  await page.mouse.move(x, y);
+  await expect(page.locator('.book-stage')).toHaveAttribute('data-turn-edge', 'next');
+  await page.mouse.down();
+  await page.mouse.move(x - 70, y - 50, { steps: 8 });
+  await expect(page.locator('.book-stage')).toHaveClass(/is-turning/);
+  await expect(page.locator('.stf__innerShadow')).toBeVisible();
+  await page.mouse.move(x, y, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.page-indicator')).toContainText('Our story');
+  await fits(page);
+  await page.mouse.move(x, y); await page.mouse.down();
+  await page.mouse.move(bounds.x - bounds.width * .6, y - 65, { steps: 18 });
+  await page.mouse.up();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.page-indicator')).toContainText('The invitation');
+  await fits(page);
+  await rsvp(page);
+  await page.getByLabel('Full name *').fill('Alex Guest');
+  const input = (await page.getByLabel('Full name *').boundingBox())!;
+  await page.mouse.move(input.x + input.width - 5, input.y + 20);
+  await page.mouse.down(); await page.mouse.move(input.x + 20, input.y + 20, { steps: 8 }); await page.mouse.up();
+  await expect(page.getByLabel('Full name *')).toHaveValue('Alex Guest');
+  await expect(page.locator('.page-indicator')).toContainText('RSVP');
+  await fits(page);
+});
+
+test('chapter shortcuts quickly turn through sheets in both directions', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByRole('button', { name: 'Open our invitation' }).click();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await page.evaluate(() => {
+    (window as unknown as { turned: string[] }).turned = [];
+    const indicator = document.querySelector('.page-indicator')!;
+    new MutationObserver(() => (window as unknown as { turned: string[] }).turned.push(indicator.textContent || '')).observe(indicator, { subtree: true, childList: true, characterData: true });
+  });
+  await page.getByRole('button', { name: 'Go to Guest information' }).click();
+  await expect(page.locator('.book-stage')).toHaveClass(/is-turning/);
+  const viewport = page.viewportSize()!;
+  await page.setViewportSize({ ...viewport, height: viewport.height - 20 });
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.page-indicator')).toContainText('Guest information');
+  expect(await page.evaluate(() => new Set((window as unknown as { turned: string[] }).turned).size)).toBeGreaterThanOrEqual(3);
+  await fits(page);
+  await page.getByRole('button', { name: 'Go to Our story' }).click();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.page-indicator')).toContainText('Our story');
+  await page.getByRole('button', { name: 'RSVP', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Go to RSVP' })).toBeEnabled();
+  await page.getByLabel('Full name *').fill('Alex Guest');
+  await page.getByRole('button', { name: 'Return to invitation cover' }).click();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeEnabled();
+  await expect(page.locator('.page-indicator')).toContainText('The beginning');
+  await page.getByRole('button', { name: 'Go to RSVP' }).click();
+  await expect(page.getByRole('button', { name: 'Go to RSVP' })).toBeEnabled();
+  await expect(page.getByLabel('Full name *')).toHaveValue('Alex Guest');
   await fits(page);
 });
